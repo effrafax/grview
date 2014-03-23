@@ -1,0 +1,46 @@
+package graphfx.ui.fx;
+
+import javafx.event.ActionEvent;
+import javafx.event.EventTarget;
+import javafx.event.EventType;
+
+/**
+ * Event that is fired, when a node is dragged and fixed to a certain
+ * position.
+ * 
+ * @author martin
+ *
+ */
+public class GraphEvent extends ActionEvent
+{
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 6361493107945474456L;
+    
+    /**
+     * Node is fixed by the drag position
+     */
+    public static final EventType<GraphEvent>  GRAPH_NODE_FIXED = new EventType<>("GRAPH_NODE_FIXED");
+    
+    /**
+     * Node is released and can float freely
+     */
+    public static final EventType<GraphEvent>  GRAPH_NODE_RELEASED = new EventType<>("GRAPH_NODE_RELEASED");
+
+    public GraphEvent(EventType<? extends GraphEvent> eventType) {
+        super();
+        this.eventType = eventType;
+    }
+
+    
+    public GraphEvent(Object source, EventTarget target, EventType<? extends GraphEvent> eventType) {
+        super(source, target);
+        this.eventType = eventType;
+    }
+
+    
+    
+
+}

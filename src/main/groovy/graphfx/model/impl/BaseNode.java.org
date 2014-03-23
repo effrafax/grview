@@ -1,0 +1,261 @@
+package graphfx.model.impl;
+
+import graphfx.model.Graph;
+import graphfx.model.Node;
+
+import java.util.Arrays;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jiggle.graph.JiggleObject;
+
+/* Abstract base class for all JIGGLE objects that have rectangular
+ representations.  Known subclasses: Vertex, EdgeLabel, QuadTree. */
+
+public abstract class BaseNode extends JiggleObject implements Node
+{
+    
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
+    private int dimensions = 2; /* default is a 2-D cell */
+    private double weight; /* weight of cell */
+    private double coords[]; /* coordinates of center of cell */
+    private double min[], max[]; /* bounding box of cell */
+    private double size[]; /* dimensions of cell */
+    private volatile boolean fixed = false;
+
+    public BaseNode()
+    {
+        setDimensions(2);
+        weight = 0;
+    }
+
+    @Override
+    public double getWeight()
+    {
+        return weight;
+    }
+
+    @Override
+    public void setWeight(double w)
+    {
+        weight = w;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see jiggle.Node#getDimensions()
+     */
+    @Override
+    public int getDimensions()
+    {
+        return dimensions;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see jiggle.Node#setDimensions(int)
+     */
+    @Override
+    public void setDimensions(int d)
+    {
+        dimensions = d;
+        coords = new double[d];
+        setCoords(new double[d]);
+        size = new double[d];
+        min = new double[d];
+        max = new double[d];
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see jiggle.Node#getCoords()
+     */
+    @Override
+    public double[] getCoords()
+    {
+        return coords;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see jiggle.Node#setCoords(double[])
+     */
+    @Override
+    public void setCoords(double[] c)
+    {
+        if (!isFixed())
+        {
+            log.debug("Setting coords: "+this+" "+c[0]+"/"+c[1]);
+            for (int i = 0; i < dimensions; i++)
+                coords[i] = c[i];
+        } else {
+            log.debug("Fixed: "+this);
+        }
+    }
+
+    public boolean isFixed()
+    {
+        return fixed;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setFixed(boolean fi)
+    {
+        this.fixed = fi;
+        if (getContext() instanceof Graph)   {
+            ((Graph)getContext()).setConstrained(fi);
+        }
+    }
+
+    public double[] getMin()
+    {
+        return min;
+    }
+
+    public void setMin(double[] c)
+    {
+        for (int i = 0; i < dimensions; i++)
+            min[i] = c[i];
+        recomputeSize();
+    }
+
+    public double[] getMax()
+    {
+        return max;
+    }
+
+    public void setMax(double[] c)
+    {
+        for (int i = 0; i < dimensions; i++)
+            max[i] = c[i];
+        recomputeSize();
+    }
+
+    public void recomputeSize()
+    {
+        for (int i = 0; i < dimensions; i++)
+            size[i] = max[i] - min[i];
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see jiggle.Node#getSize()
+     */
+    @Override
+    public double[] getSize()
+    {
+        return size;
+    }
+
+    public void setSize(double[] c)
+    {
+        for (int i = 0; i < dimensions; i++)
+            size[i] = c[i];
+        recomputeBoundaries();
+    }
+
+    public void recomputeBoundaries()
+    {
+        for (int i = 0; i < dimensions; i++)
+        {
+            min[i] = getCoords()[i] - size[i] / 2;
+            max[i] = getCoords()[i] + size[i] / 2;
+        }
+    }
+
+    @Override
+    public void translate(double[] vector)
+    {
+        translate(1, vector);
+    }
+
+    @Override
+    public void translate(double scalar, double[] vector)
+    {
+        if (!isFixed())
+        {
+            double[] newCoords = Arrays.copyOf(coords, dimensions);
+            for (int i = 0; i < dimensions; i++)
+            {
+                double translation = scalar * vector[i];
+                newCoords[i] += translation;
+                min[i] += translation;
+                max[i] += translation;
+            }
+            setCoords(newCoords);
+        }
+    }
+
+    public static double getDistanceSquared(Node c1, Node c2)
+    {
+        double sum = 0;
+        int d = c1.getDimensions();
+        for (int i = 0; i < d; i++)
+            sum += square(c1.getCoords()[i] - c2.getCoords()[i]);
+        return sum;
+    }
+
+    public static double getDistanceSquared(Node cell, double[] point)
+    {
+        double sum = 0;
+        int d = cell.getDimensions();
+        for (int i = 0; i < d; i++)
+            sum += square(cell.getCoords()[i] - point[i]);
+        return sum;
+    }
+
+    public static double getDistance(Node c1, Node c2)
+    {
+        return Math.sqrt(getDistanceSquared(c1, c2));
+    }
+
+    public static double getDistance(Node cell, double[] point)
+    {
+        return Math.sqrt(getDistanceSquared(cell, point));
+    }
+
+    public static double sumOfRadii(Node c1, Node c2)
+    {
+        int d = c1.getDimensions();
+        double coords1[] = c1.getCoords(), coords2[] = c2.getCoords();
+        double seg[] = new double[d];
+        for (int i = 0; i < d; i++)
+            seg[i] = coords2[i] - coords1[i];
+        return radius(d, c1.getSize(), seg) + radius(d, c2.getSize(), seg);
+    }
+
+    public static double radius(Node cell, double[] point)
+    {
+        int d = cell.getDimensions();
+        double coords[] = cell.getCoords();
+        double seg[] = new double[d];
+        for (int i = 0; i < d; i++)
+            seg[i] = point[i] - coords[i];
+        return radius(d, cell.getSize(), seg);
+    }
+
+    public static double radius(int d, double[] cellSize, double[] segment)
+    {
+        double sum = 0;
+        for (int i = 0; i < d; i++)
+            sum += cellSize[i];
+        if (sum == 0)
+            return 0;
+        double t = Double.MAX_VALUE;
+        for (int i = 0; i < d; i++)
+        {
+            t = Math.min(t, Math.abs(cellSize[i] / segment[i]));
+        }
+        double lengthSquared = 0;
+        for (int i = 0; i < d; i++)
+            lengthSquared += square(t * segment[i]);
+        return Math.sqrt(lengthSquared) / 2;
+    }
+}

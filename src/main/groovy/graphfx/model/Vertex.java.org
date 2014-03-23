@@ -1,0 +1,49 @@
+package graphfx.model;
+
+import java.util.List;
+
+public interface Vertex<V extends Vertex<V>> extends Node
+{
+    
+    public String getName();
+
+    public boolean isFixed();
+    
+    public int getUndirectedDegree();
+
+    public int getInDegree();
+
+    public int getOutDegree();
+    
+    public void insertNeighbor(Edge<V> e);
+
+    public void deleteNeighbor(Edge<V> e);
+
+    public List<Edge<V>> getUndirectedEdges();
+
+    public void setUndirectedEdges(List<Edge<V>> undirectedEdges);
+
+    public List<Edge<V>> getInEdges();
+
+    public void setInEdges(List<Edge<V>> inEdges);
+
+    public List<Edge<V>> getOutEdges();
+
+    public void setOutEdges(List<Edge<V>> outEdges);
+
+    public List<Vertex<V>> getUndirectedNeighbors();
+
+    public void setUndirectedNeighbors(
+        List<Vertex<V>> undirectedNeighbors);
+
+    public List<Vertex<V>> getInNeighbors();
+
+    public void setInNeighbors(List<Vertex<V>> inNeighbors);
+
+    public List<Vertex<V>> getOutNeighbors();
+
+    public void setOutNeighbors(List<Vertex<V>> outNeighbors);
+    
+    public V getExtension();
+
+}

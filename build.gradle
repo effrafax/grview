@@ -1,0 +1,128 @@
+// apply plugin: 'idea'
+apply plugin: 'groovy'
+apply plugin: 'application'
+apply from: file('gradle/javafx-plugin.gradle')
+
+wrapper {
+    gradleVersion = "1.11"
+}
+
+mainClassName = 'grview.Launcher'
+
+version = '0.1.0'
+group = 'grview'
+ext.griffonVersion = '2.0.0-SNAPSHOT'
+
+configurations {
+    compileOnly
+}
+
+repositories {
+    jcenter()
+    maven { url 'http://dl.bintray.com/content/aalmiray/griffon' }
+    maven { url 'http://dl.bintray.com/content/aalmiray/kordamp' }
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile "org.codehaus.griffon:griffon-groovy-compile:$griffonVersion"
+
+    compile "org.codehaus.griffon:griffon-groovy:$griffonVersion"
+    compile "org.codehaus.griffon:griffon-javafx:$griffonVersion"
+
+    compile "org.codehaus.griffon:griffon-javafx-builder:$griffonVersion"
+    compile "org.codehaus.griffon:griffon-guice:$griffonVersion"
+    compile 'org.codehaus.groovyfx:groovyfx:0.4.0-SNAPSHOT'
+    compile 'org.jfxtras:jfxtras-labs:2.2-r5'
+    compile 'org.codehaus.groovy:groovy-all:2.2.2'
+
+
+
+    runtime('log4j:log4j:1.2.17') {
+        exclude group: 'ant', module: 'ant-nodeps'
+        exclude group: 'ant', module: 'ant-junit'
+        exclude group: 'ant-contrib', module: 'ant-contrib'
+    }
+    compile 'org.slf4j:slf4j-log4j12:1.7.5'
+    testCompile "org.codehaus.griffon:griffon-core-test:$griffonVersion"
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.compileOnly
+        groovy { //<5>
+            srcDirs = [
+                    'griffon-app/conf',
+                    'griffon-app/controllers',
+                    'griffon-app/models',
+                    'griffon-app/views',
+                    'griffon-app/services',
+                    'griffon-app/lifecycle',
+                    'src/main/groovy'
+            ]
+        }
+        resources { //<5>
+            srcDirs = [
+                    'griffon-app/resources',
+                    'griffon-app/i18n',
+                    'src/main/resources'
+            ]
+        }
+    }
+}
+
+javadoc {
+    classpath += configurations.compileOnly
+}
+
+// idea {
+//     module {
+//         scopes.PROVIDED.plus += configurations.compileOnly
+//     }
+// }
+
+javafx {
+    mainClass = mainClassName
+}
+
+gradle.taskGraph.whenReady {
+    sourceSets.main.groovy.srcDirs.each { it.mkdirs() }
+    sourceSets.main.resources.srcDirs.each { it.mkdirs() }
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        exclude '**/*.properties'
+        exclude '**/*.groovy'
+        exclude '**/*.xml'
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        include '**/*.properties'
+        include '**/*.groovy'
+        include '**/*.xml'
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'application.name': project.name,
+            'application.version': project.version,
+            'griffon.version': project.griffonVersion
+        ])
+    }
+}
+
+processTestResources {
+    from(sourceSets.test.resources.srcDirs) {
+        exclude '**/*.properties'
+        exclude '**/*.groovy'
+        exclude '**/*.xml'
+    }
+    from(sourceSets.test.resources.srcDirs) {
+        include '**/*.properties'
+        include '**/*.groovy'
+        include '**/*.xml'
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'application.name': project.name,
+            'application.version': project.version,
+            'griffon.version': project.version
+        ])
+    }
+}

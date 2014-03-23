@@ -1,0 +1,39 @@
+package graphfx.ui;
+
+import graphfx.model.Graph;
+import graphfx.model.NodeFactory;
+import graphfx.model.Vertex;
+import graphfx.ui.graph.FxEdge;
+import graphfx.ui.graph.FxVertex;
+
+public class FxNodeFactory implements NodeFactory<FxVertex, FxEdge>
+{
+
+    public FxNodeFactory()
+    {
+        super();
+    }
+
+    @Override
+    public FxVertex createVertex(Graph<FxVertex, FxEdge> graph)
+    {
+        return new FxVertex(graph);
+    }
+
+    @Override
+    public FxEdge createEdge(
+        Graph<FxVertex, FxEdge> graph, Vertex<FxVertex> from,
+        Vertex<FxVertex> to)
+    {
+        return new FxEdge(graph, from, to);
+    }
+
+    @Override
+    public FxEdge createEdge(
+        Graph<FxVertex, FxEdge> graph, Vertex<FxVertex> from,
+        Vertex<FxVertex> to, boolean directed)
+    {
+        return new FxEdge(graph,from,to,directed);
+    }
+
+}

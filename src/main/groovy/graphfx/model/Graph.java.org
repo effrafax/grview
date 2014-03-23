@@ -1,0 +1,41 @@
+package graphfx.model;
+
+import java.util.List;
+import java.util.NoSuchElementException;
+
+
+
+public interface Graph<V extends Vertex<V>,E extends Edge<V>> extends Node
+{
+
+    public Vertex<V> insertVertex();
+    
+    public Vertex<V> addVertex(Vertex<V> vtx);
+
+    public E insertEdge(Vertex<V> from, Vertex<V> to);
+
+    public E insertEdge(Vertex<V> from, Vertex<V> to, boolean dir);
+    
+    public E addEdge(E edge);
+
+    public void deleteVertex(Vertex<V> v);
+
+    public void deleteEdge(E e) throws NoSuchElementException;
+
+    public int getVertexNumber();
+
+    public int getEdgeNumber();
+
+    public List<Vertex<V>> getVertices();
+
+    public List<E> getEdges();
+
+    public int getDimensions();
+
+    public void recomputeBoundaries();
+    
+    public boolean isConstrained();
+    
+    public void setConstrained(boolean constr);
+
+}

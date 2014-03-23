@@ -1,0 +1,22 @@
+package graphfx.model;
+
+public interface GraphElement
+{
+
+    public boolean isBooleanField();
+
+    public void setBooleanField(boolean b);
+
+    public int getIntField();
+
+    public void setIntField(int intField);
+
+    public Object getObjectField();
+
+    public void setObjectField(Object objectField);
+
+    public GraphElement getContext();
+
+    public void setContext(GraphElement context);
+
+}

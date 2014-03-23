@@ -1,0 +1,8 @@
+package graphfx.ui;
+
+public interface ForceLawId
+{
+
+    public String getName();
+    
+}

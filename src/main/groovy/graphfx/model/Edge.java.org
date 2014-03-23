@@ -1,0 +1,31 @@
+package graphfx.model;
+
+import jiggle.graph.EdgeLabel;
+
+
+public interface Edge<V extends Vertex<V>> extends GraphElement
+{
+    
+    public Vertex<V> getFrom();
+
+    public Vertex<V> getTo();
+
+    public EdgeLabel getLabel();
+
+    public void setLabel(EdgeLabel lbl);
+
+    public boolean getDirected();
+
+    public void setDirected(boolean d);
+
+    public double getPreferredLength();
+
+    public void setPreferredLength(double len);
+
+    public double getLengthSquared();
+
+    public double getLength();
+
+    public String toString();
+    
+}

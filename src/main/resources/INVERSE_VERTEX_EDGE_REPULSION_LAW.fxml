@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.transform.*?>
+<?import javafx.scene.effect.*?>
+
+<Group id='_root' xmlns:fx="http://javafx.com/fxml" xmlns:fxsvg="http://efxclipse.org/fxml-svg">
+	<children>
+		<fx:define>
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+			<!-- Unhandled type 'SvgMarkerElement' -->
+		</fx:define>
+		<!-- Unhandled type 'SvgMetadataElement' -->
+		<Group
+			opacity="1.0"
+			id="layer1"
+			>
+			<children>
+				<Rectangle
+					x="142.27826"
+					y="310.30789"
+					width="69.42675"
+					height="25.255301"
+					opacity="1"
+					id="rect3009"
+					>
+					<fill>
+						<Color>
+							<red>1.0</red>
+							<green>0.8823529411764706</green>
+							<blue>0.0</blue>
+							<opacity>0.06896554</opacity>
+						</Color>
+					</fill>
+					
+				</Rectangle>
+				<SVGPath
+					content="m 149.37486,314.91075 14.20326,16.50676 16.2863,-14.18027"
+					opacity="1"
+					strokeWidth="0.391"
+					id="path5164-7"
+					>
+					<fill>
+						TRANSPARENT
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+				</SVGPath>
+				<SVGPath
+					content="m 40,472.36218 a 40,40 0 1 1 -80,0 40,40 0 1 1 80,0 z"
+					opacity="1"
+					fillRule="EVEN_ODD"
+					strokeWidth="1.0"
+					id="path3008-4-1"
+					>
+					<fill>
+						<Color>
+							<red>1.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+					<transforms>
+						<Affine
+							mxx="0.09271294"
+							myx="0"
+							mxy="0"
+							myy="0.08897229"
+							tx="180.08985"
+							ty="275.29409"
+							>
+						</Affine>
+					</transforms>
+				</SVGPath>
+				<Group
+					translateX="0.0"
+					translateY="0.0"
+					opacity="1.0"
+					id="use3187"
+					>
+					
+					<children>
+						<SVGPath
+							content="m 40,472.36218 a 40,40 0 1 1 -80,0 40,40 0 1 1 80,0 z"
+							opacity="1"
+							fillRule="EVEN_ODD"
+							strokeWidth="1.0"
+							id="path3008-4-1"
+							>
+							<fill>
+								<Color>
+									<red>1.0</red>
+									<green>0.0</green>
+									<blue>0.0</blue>
+								</Color>
+							</fill>
+							<stroke>
+								<Color>
+									<red>0.0</red>
+									<green>0.0</green>
+									<blue>0.0</blue>
+								</Color>
+							</stroke>
+							<transforms>
+								<Affine
+									mxx="0.09271294"
+									myx="0"
+									mxy="0"
+									myy="0.08897229"
+									tx="180.08985"
+									ty="275.29409"
+									>
+								</Affine>
+							</transforms>
+						</SVGPath>
+					</children>
+					<transforms>
+						<Translate
+							x="-16.511302"
+							y="14.084554"
+							>
+						</Translate>
+					</transforms>
+				</Group>
+				<Group
+					translateX="0.0"
+					translateY="0.0"
+					opacity="1.0"
+					id="use3189"
+					>
+					
+					<children>
+						<SVGPath
+							content="m 40,472.36218 a 40,40 0 1 1 -80,0 40,40 0 1 1 80,0 z"
+							opacity="1"
+							fillRule="EVEN_ODD"
+							strokeWidth="1.0"
+							id="path3008-4-1"
+							>
+							<fill>
+								<Color>
+									<red>1.0</red>
+									<green>0.0</green>
+									<blue>0.0</blue>
+								</Color>
+							</fill>
+							<stroke>
+								<Color>
+									<red>0.0</red>
+									<green>0.0</green>
+									<blue>0.0</blue>
+								</Color>
+							</stroke>
+							<transforms>
+								<Affine
+									mxx="0.09271294"
+									myx="0"
+									mxy="0"
+									myy="0.08897229"
+									tx="180.08985"
+									ty="275.29409"
+									>
+								</Affine>
+							</transforms>
+						</SVGPath>
+					</children>
+					<transforms>
+						<Translate
+							x="-30.729367"
+							y="-2.6408539"
+							>
+						</Translate>
+					</transforms>
+				</Group>
+				<SVGPath
+					content="m 192.79593,334.67337 0,-25"
+					opacity="1"
+					strokeWidth="0.5"
+					id="path3839"
+					>
+					<fill>
+						TRANSPARENT
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+				</SVGPath>
+				<SVGPath
+					content="m 187.79593,329.67337 20,0"
+					opacity="1"
+					strokeWidth="0.40000001"
+					id="path3841"
+					>
+					<fill>
+						TRANSPARENT
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+				</SVGPath>
+				<SVGPath
+					content="m 204.79593,311.67337 -16,23"
+					opacity="1"
+					strokeWidth="1.0"
+					id="path3862"
+					>
+					<fill>
+						TRANSPARENT
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+				</SVGPath>
+				<SVGPath
+					content="m 155.69898,321.19721 c 9.30102,-13.83503 20.233,-5 20.233,-5"
+					opacity="1"
+					strokeMiterLimit="2.0999999"
+					strokeWidth="0.3"
+					id="path4657"
+					>
+					<fill>
+						TRANSPARENT
+					</fill>
+					<stroke>
+						<Color>
+							<red>0.0</red>
+							<green>0.0</green>
+							<blue>0.0</blue>
+						</Color>
+					</stroke>
+				</SVGPath>
+			</children>
+		</Group>
+	</children>
+</Group>

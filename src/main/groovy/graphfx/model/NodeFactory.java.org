@@ -1,0 +1,12 @@
+package graphfx.model;
+
+
+public interface NodeFactory<V extends Vertex<V>, E extends Edge<V>>
+{
+
+    public abstract V createVertex(Graph<V, E> graph);
+    
+    public abstract E createEdge(Graph<V, E> graph, Vertex<V> from, Vertex<V> to);
+    
+    public abstract E createEdge(Graph<V, E> graph, Vertex<V> from, Vertex<V> to, boolean directed);
+}

@@ -1,0 +1,538 @@
+/*
+ * Copyright 2008-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package graphfx.ui.graph;
+
+import graphfx.model.Edge;
+import graphfx.model.Graph;
+import graphfx.model.GraphElement;
+import graphfx.model.Vertex;
+import graphfx.model.impl.AbstractVertex;
+import graphfx.ui.fx.GraphEvent;
+import graphfx.ui.shapes.CircleVertex;
+import graphfx.ui.shapes.VertexShape;
+
+import java.util.List;
+
+import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.event.EventHandler;
+import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.input.InputEvent;
+import javafx.scene.input.MouseDragEvent;
+import javafx.scene.input.MouseEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class FxVertex extends Group implements Vertex<FxVertex>,
+    EventHandler<InputEvent>
+{
+
+    private AbstractVertex<FxVertex> delegate;
+
+    public FxVertex(Graph<FxVertex,FxEdge> graph)
+    {
+        super();
+        log.debug("Initializing");
+        init(graph,null);
+    }
+
+    public FxVertex(Graph<FxVertex,FxEdge> graph, VertexShape<? extends Node> vertexSymbol)
+    {
+        init(graph,center);
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(FxVertex.class);
+
+    public static final String DEFAULT_STYLE_CLASS = "graphVertex";
+    public static final String FIXED_STYLE_CLASS = "graphVertexFixed";
+    public static final double DEFAULT_RADIUS = 10.0;
+
+    private Delta dragDelta;
+
+    private boolean dragging = false;
+
+    VertexShape<? extends Node> center;
+
+    class Delta
+    {
+        double x, y;
+    }
+
+    private boolean updateNode = true;
+
+    public Vertex<FxVertex> getDelegate()
+    {
+        return delegate;
+    }
+
+    private void init(Graph<FxVertex,FxEdge> graph, VertexShape<? extends Node> vx)
+    {
+        if (vx==null) {
+            vx = new CircleVertex(DEFAULT_RADIUS);
+        }
+        this.center = vx;
+        this.delegate = new AbstractVertex<FxVertex>(graph);
+        getStyleClass().add(DEFAULT_STYLE_CLASS);
+        getChildren().add(vx.getNode());
+        vx.setCenterX(getCoords()[0]);
+        vx.setCenterY(getCoords()[1]);
+
+        /*
+         * Einzelknoten
+         * 
+         * setOnDragDetected START -> circle.startFullDrag() ->event.consume()?
+         * 
+         * setOnMouseDragged KOORDINATEN-CHANGE ->event.consume()?
+         * 
+         * setOnMouseDragEntered Überschneidung mit anderem Node
+         * setOnMouseDragExited Überschneidung verlassen
+         * 
+         * setOnMouseDragReleased ENDE DES DRAGS
+         */
+
+        this.setOnMouseDragged(this);
+        this.setOnDragDetected(this);
+        this.setOnMouseDragReleased(this);
+        this.setOnMouseClicked(this);
+    }
+
+    @Override
+    public void setCoords(final double[] c)
+    {
+        if (!isFixed())
+        {
+            delegate.setCoords(c);
+            if (updateNode)
+            {
+                syncModelToNode();
+            }
+
+        }
+    }
+
+    public boolean isUpdateNode()
+    {
+        return updateNode;
+    }
+
+    public void setUpdateNode(boolean updateNode)
+    {
+        this.updateNode = updateNode;
+    }
+
+    @Override
+    public void deleteNeighbor(Edge<FxVertex> e)
+    {
+        delegate.deleteNeighbor(e);
+    }
+
+    @Override
+    public void insertNeighbor(Edge<FxVertex> e)
+    {
+        delegate.insertNeighbor(e);
+    }
+
+    @Override
+    public List<Vertex<FxVertex>> getInNeighbors()
+    {
+        return delegate.getInNeighbors();
+    }
+
+    @Override
+    public List<Edge<FxVertex>> getOutEdges()
+    {
+        return delegate.getOutEdges();
+    }
+
+    @Override
+    public List<Edge<FxVertex>> getUndirectedEdges()
+    {
+        return delegate.getUndirectedEdges();
+    }
+
+    @Override
+    public List<Vertex<FxVertex>> getUndirectedNeighbors()
+    {
+        return delegate.getUndirectedNeighbors();
+    }
+
+    @Override
+    public List<Vertex<FxVertex>> getOutNeighbors()
+    {
+        return delegate.getOutNeighbors();
+    }
+
+    @Override
+    public List<Edge<FxVertex>> getInEdges()
+    {
+        return delegate.getInEdges();
+    }
+
+    public void syncModelToNode()
+    {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run()
+            {
+                setCenterX(getCoords()[0]);
+                setCenterY(getCoords()[1]);
+            }
+        });
+
+    }
+
+    /**
+     * Writes the node coordinates to the underlying model.
+     */
+    public synchronized void  syncNodeToModel()
+    {
+        getCoords()[0] = getCenterX();
+        getCoords()[1] = getCenterY();
+    }
+
+    @Override
+    public void handle(InputEvent iEvent)
+    {
+        log.debug("Event: " + iEvent.getEventType());
+        if (!dragging && iEvent.getEventType() == MouseEvent.DRAG_DETECTED)
+        {
+            log.debug("Starting Drag");
+            dragging = true;
+            startFullDrag();
+            dragDelta = new Delta();
+            dragDelta.x = getCenterX() - ((MouseEvent) iEvent).getScreenX();
+            dragDelta.y = getCenterY() - ((MouseEvent) iEvent).getScreenY();
+            iEvent.consume();
+            fireEvent(new GraphEvent(this, this,
+                GraphEvent.GRAPH_NODE_FIXED));
+            setFixed(true);
+        } else if (dragging
+            && iEvent.getEventType() == MouseDragEvent.MOUSE_DRAG_RELEASED)
+        {
+            log.debug("Stopping Drag");
+            dragging = false;
+            iEvent.consume();
+            fireEvent(new GraphEvent(this, this,
+                GraphEvent.GRAPH_NODE_RELEASED));
+            setFixed(false);
+
+        } else if (dragging
+            && iEvent.getEventType() == MouseEvent.MOUSE_RELEASED)
+        {
+            dragging = false;
+            fireEvent(new GraphEvent(this, this,
+                GraphEvent.GRAPH_NODE_RELEASED));
+        }
+
+        if (iEvent instanceof MouseEvent)
+        {
+            MouseEvent mouseEvent = (MouseEvent) iEvent;
+            log.debug("MouseEvent: " + mouseEvent.getX() + "/"
+                + mouseEvent.getY());
+            if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_CLICKED)) 
+            {
+                log.debug("Clicked");
+                if (!isFixed())
+                {
+                    log.debug("Setting fixed");
+                    setFixed(true);
+                    fireEvent(new GraphEvent(this, this,
+                        GraphEvent.GRAPH_NODE_FIXED));
+                } else
+                {
+                    log.debug("Release Fix");
+                    setFixed(false);
+                    fireEvent(new GraphEvent(this, this,
+                        GraphEvent.GRAPH_NODE_RELEASED));
+                }
+
+            } else if (dragging && mouseEvent.getEventType().equals(
+                MouseEvent.MOUSE_DRAGGED))
+            {
+                if (!isFixed()) {
+                    setFixed(true);
+                }
+                setCenterX(((MouseEvent) mouseEvent).getScreenX() + dragDelta.x);
+                setCenterY(((MouseEvent) mouseEvent).getScreenY() + dragDelta.y);
+                syncNodeToModel();
+            }
+        }
+
+    }
+
+    @Override
+    public void setFixed(boolean fi)
+    {
+        if (fi != isFixed())
+        {
+            log.debug("Toggling Fixed Status "+fi);
+            delegate.setFixed(fi);
+            if (fi)
+            {
+                getStyleClass().add(FIXED_STYLE_CLASS);
+            } else
+            {
+                getStyleClass().remove(FIXED_STYLE_CLASS);
+            }
+            for (String style : getStyleClass())
+            {
+                log.debug("StyleClass: "+style);
+            }
+            for (String stylesheet : getStylesheets())
+            {
+                log.debug("StyleSheet: "+stylesheet);
+            }
+            syncNodeToModel();
+        }
+
+    }
+
+    /*
+     * 
+     * Delegation methods to BaseVertex
+     */
+
+    //
+    @Override
+    public String getName()
+    {
+        return delegate.getName();
+    }
+
+    @Override
+    public boolean isFixed()
+    {
+        return delegate.isFixed();
+    }
+
+    @Override
+    public void setUndirectedEdges(List<Edge<FxVertex>> undirectedEdges)
+    {
+        delegate.setUndirectedEdges(undirectedEdges);
+    }
+
+    @Override
+    public void setInEdges(List<Edge<FxVertex>> inEdges)
+    {
+        delegate.setInEdges(inEdges);
+    }
+
+    @Override
+    public void setOutEdges(List<Edge<FxVertex>> outEdges)
+    {
+        delegate.setOutEdges(outEdges);
+    }
+
+    @Override
+    public void setUndirectedNeighbors(
+        List<Vertex<FxVertex>> undirectedNeighbors)
+    {
+        delegate.setUndirectedNeighbors(undirectedNeighbors);
+    }
+
+    @Override
+    public void setInNeighbors(List<Vertex<FxVertex>> inNeighbors)
+    {
+        delegate.setInNeighbors(inNeighbors);
+    }
+
+    @Override
+    public void setOutNeighbors(List<Vertex<FxVertex>> outNeighbors)
+    {
+        delegate.setOutNeighbors(outNeighbors);
+    }
+
+    @Override
+    public int getUndirectedDegree()
+    {
+        return delegate.getUndirectedDegree();
+    }
+
+    @Override
+    public int getInDegree()
+    {
+        return delegate.getInDegree();
+    }
+
+    @Override
+    public int getOutDegree()
+    {
+        return delegate.getOutDegree();
+    }
+
+    @Override
+    public int getDimensions()
+    {
+        return delegate.getDimensions();
+    }
+
+    @Override
+    public void setDimensions(int d)
+    {
+        delegate.setDimensions(d);
+    }
+
+    @Override
+    public double[] getCoords()
+    {
+        return delegate.getCoords();
+    }
+
+    @Override
+    public double[] getSize()
+    {
+        return delegate.getSize();
+    }
+
+    @Override
+    public double[] getMin()
+    {
+        return delegate.getMin();
+    }
+
+    @Override
+    public double[] getMax()
+    {
+        return delegate.getMax();
+    }
+
+    @Override
+    public void translate(double scalar, double[] vector)
+    {
+        delegate.translate(scalar, vector);
+    }
+
+    @Override
+    public void translate(double[] vector)
+    {
+        delegate.translate(vector);
+    }
+
+    @Override
+    public void setWeight(double w)
+    {
+        delegate.setWeight(w);
+    }
+
+    @Override
+    public double getWeight()
+    {
+        return delegate.getWeight();
+    }
+
+    @Override
+    public boolean isBooleanField()
+    {
+        return delegate.isBooleanField();
+    }
+
+    @Override
+    public void setBooleanField(boolean b)
+    {
+        delegate.setBooleanField(b);
+    }
+
+    @Override
+    public int getIntField()
+    {
+        return delegate.getIntField();
+    }
+
+    @Override
+    public void setIntField(int intField)
+    {
+        delegate.setIntField(intField);
+    }
+
+    @Override
+    public Object getObjectField()
+    {
+        return delegate.getObjectField();
+    }
+
+    @Override
+    public void setObjectField(Object objectField)
+    {
+        delegate.setObjectField(objectField);
+    }
+
+    @Override
+    public GraphElement getContext()
+    {
+        return delegate.getContext();
+    }
+
+    @Override
+    public void setContext(GraphElement context)
+    {
+        delegate.setContext(context);
+    }
+
+    public DoubleProperty centerXProperty()
+    {
+        return center.centerXProperty();
+    }
+
+    public DoubleProperty centerYProperty()
+    {
+        return center.centerYProperty();
+    }
+
+    public double getCenterX()
+    {
+        return center.getCenterX();
+    }
+
+    public double getCenterY()
+    {
+        return center.getCenterY();
+    }
+
+    public void setCenterX(double x)
+    {
+        center.setCenterX(x);
+    }
+
+    public void setCenterY(double y)
+    {
+        center.setCenterY(y);
+    }
+
+    @Override
+    public FxVertex getExtension()
+    {
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj instanceof AbstractVertex)
+        {
+            return this.delegate.equals(obj);
+        } else if (obj instanceof FxVertex)
+        {
+            return this == obj;
+        } else
+        {
+            return false;
+        }
+    }
+
+}

@@ -1,0 +1,6 @@
+package graphfx.model;
+
+public interface SVertex extends Vertex<SVertex>
+{
+
+}

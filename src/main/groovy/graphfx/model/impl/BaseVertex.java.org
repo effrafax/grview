@@ -1,0 +1,22 @@
+package graphfx.model.impl;
+
+import graphfx.model.Edge;
+import graphfx.model.Graph;
+import graphfx.model.Vertex;
+
+public class BaseVertex extends AbstractVertex<BaseVertex> implements Vertex<BaseVertex>
+{
+
+    public BaseVertex(Graph<BaseVertex, ? extends Edge<BaseVertex>> graph)
+    {
+        super(graph);
+    }
+
+    @Override
+    public BaseVertex getExtension()
+    {
+        return this;
+    }
+    
+
+}

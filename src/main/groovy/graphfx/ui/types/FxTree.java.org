@@ -1,0 +1,47 @@
+package graphfx.ui.types;
+
+import graphfx.ui.graph.FxGraph;
+import graphfx.ui.graph.FxVertex;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class FxTree extends FxGraph
+{
+
+    public FxTree(int children, int level, boolean randomChilds)
+    {
+        super();
+
+        initialize(children, level, randomChilds);
+    }
+
+    private void initialize(int children, int level, boolean randomChilds)
+    {
+        List<FxVertex> currentNodes = new ArrayList<>();
+        List<FxVertex> newNodes = new ArrayList<>();
+        FxVertex rootNode = insertVertex().getExtension();
+        currentNodes.add(rootNode);
+        int childs;
+        for (int l = 0; l < level; l++)
+        {
+            newNodes.clear();
+            for (FxVertex fxVertex : currentNodes)
+            {
+                childs = randomChilds ? ((int) (Math.random() * children))
+                    : children;
+                for (int i = 0; i < childs; i++)
+                {
+                    FxVertex to = insertVertex().getExtension();
+                    insertEdge(fxVertex, to);
+                    newNodes.add(to);
+                }
+                
+            }
+            currentNodes.clear();
+            currentNodes.addAll(newNodes);
+        }
+
+    }
+
+}

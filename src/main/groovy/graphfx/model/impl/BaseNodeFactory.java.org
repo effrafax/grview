@@ -1,0 +1,40 @@
+package graphfx.model.impl;
+
+import graphfx.model.Edge;
+import graphfx.model.Graph;
+import graphfx.model.NodeFactory;
+import graphfx.model.impl.BaseVertex;
+import graphfx.model.Vertex;
+
+public class BaseNodeFactory implements NodeFactory<BaseVertex, Edge<BaseVertex>>
+{
+
+    public BaseNodeFactory()
+    {
+        // TODO Auto-generated constructor stub
+    }
+
+
+    @Override
+    public Edge<BaseVertex> createEdge(
+        Graph<BaseVertex, Edge<BaseVertex>> graph, Vertex<BaseVertex> from, Vertex<BaseVertex> to)
+    {
+        return new BaseEdge<BaseVertex>(graph, from, to);
+    }
+
+    @Override
+    public Edge<BaseVertex> createEdge(
+        Graph<BaseVertex, Edge<BaseVertex>> graph, Vertex<BaseVertex> from, Vertex<BaseVertex> to,
+        boolean directed)
+    {
+        return new BaseEdge<BaseVertex>(graph, from, to, directed);
+    }
+
+
+    @Override
+    public BaseVertex createVertex(Graph<BaseVertex, Edge<BaseVertex>> graph)
+    {
+        return new BaseVertex(graph);
+    }
+
+}

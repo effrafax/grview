@@ -1,0 +1,25 @@
+package graphfx.ui;
+
+public enum StandardForceLaw implements ForceLawId
+{
+    INVERSE_VERTEX_VERTEX_REPULSION_LAW,
+    INVERSE_VERTEX_EDGE_REPULSION_LAW,
+    INVERSE_SQUARE_VERTEX_VERTEX_REPULSION_LAW,
+    INVERSE_SQUARE_VERTEX_EDGE_REPULSION_LAW,
+    HYBRID_VERTEX_VERTEX_REPULSION_LAW,
+    QUADRATIC_SPRING_LAW,
+    LINEAR_SPRING_LAW;
+    
+    ForceLawId lawFor(String id) {
+        return StandardForceLaw.valueOf(id);
+    }
+    
+    @Override
+    public String getName()
+    {
+        return this.name();
+    }
+    
+    
+
+}

@@ -1,0 +1,484 @@
+/*
+ * Copyright 2008-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package graphfx.layout;
+
+import graphfx.model.Vertex;
+import graphfx.ui.fx.GraphEvent;
+import graphfx.ui.graph.FxGraph;
+import graphfx.ui.graph.FxVertex;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javafx.animation.Animation;
+import javafx.animation.Animation.Status;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.SequentialTransition;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.util.Duration;
+import jiggle.graph.optimization.FirstOrderOptimizationProcedure;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AnimatedGraphLayout extends SimpleGraphLayout implements
+    EventHandler<ActionEvent>
+{
+
+    private static final Logger log = LoggerFactory
+        .getLogger(AnimatedGraphLayout.class);
+
+    public static final double OPTIMIZER_THRESHOLD = 0.01;
+    public static final int KEY_FRAME_NUM = 5;
+
+    // Maximum
+    private static final int MAX_WAIT_MILLIS = 10000;
+    // This is the minimum cycle period to allow, to avoid jitter
+    private static final double MIN_CYCLE_PERIOD = 10;
+    private static final double CYCLE_PERIOD_INCREASE = 1.2;
+    public static final int MAX_QUEUE_SIZE = 10;
+
+    private static final int STATUS_STOPPED = 0;
+    private static final int STATUS_RUNNING = 1;
+    private static final int STATUS_PAUSED = 2;
+    private static final int STATUS_PAUSE_REQUESTED = 3;
+
+    private CyclicBarrier pauseBarrier = new CyclicBarrier(2);
+
+    private ExecutorService executorPool = Executors.newFixedThreadPool(2);
+    private SequentialTransition an;
+    private Future<Double> optimizerControl;
+    private AtomicInteger optimizerStatus = new AtomicInteger(STATUS_STOPPED);
+    private LinkedBlockingQueue<Timeline> animationQueue = new LinkedBlockingQueue<>(
+        MAX_QUEUE_SIZE);
+    private long lastTime;
+
+    private DoubleProperty minCyclePeriod = new SimpleDoubleProperty(
+        MIN_CYCLE_PERIOD);
+
+    public AnimatedGraphLayout(FxGraph graph)
+    {
+        super(graph);
+    }
+
+    @Override
+    public void initialize()
+    {
+        super.initialize();
+        for (Vertex<FxVertex> vert : getGraph().getVertices())
+        {
+            FxVertex vertex = (FxVertex) vert;
+            vertex.setUpdateNode(false);
+            vertex.syncModelToNode();
+        }
+        minCyclePeriod.addListener(this);
+        getGraph().addEventHandler(GraphEvent.GRAPH_NODE_FIXED, this);
+        getGraph().addEventHandler(GraphEvent.GRAPH_NODE_FIXED, this);
+    }
+
+    @Override
+    public void start()
+    {
+        if (an == null)
+        {
+            an = new SequentialTransition();
+            an.setCycleCount(1);
+            an.setAutoReverse(false);
+            an.setOnFinished(this);
+
+            super.status.bind(an.statusProperty());
+
+        } else if (an.getStatus() == Animation.Status.RUNNING)
+        {
+            return;
+        }
+        optimizerStatus.set(STATUS_RUNNING);
+        startImproveGraph();
+        runNextAnimation();
+    }
+
+    @Override
+    public void stop()
+    {
+        optimizerStatus.set(STATUS_STOPPED);
+        if (optimizerControl != null)
+            optimizerControl.cancel(true);
+        if (an != null)
+            an.stop();
+        animationQueue.clear();
+    }
+
+    @Override
+    public void pause()
+    {
+        if (an != null)
+        {
+            an.pause();
+        }
+    }
+
+    @Override
+    public void resume()
+    {
+        if (an != null)
+        {
+            an.play();
+        }
+    }
+
+    @Override
+    public void scramble()
+    {
+        super.scramble();
+        getGraph().syncModelToNodes();
+    }
+
+    @Override
+    protected void updateStatus(Status status)
+    {
+        // Do nothing, status is bound to the animation
+
+    }
+
+    /*
+     * Creates the Keyframe for the vertex coordinates.
+     */
+    protected KeyFrame createKeyFrame(int num)
+    {
+        List<KeyValue> values = new ArrayList<KeyValue>(getGraph()
+            .getVertexNumber() * 2);
+        for (Vertex<FxVertex> vert : getGraph().getVertices())
+        {
+            FxVertex vertex = vert.getExtension();
+            KeyValue kvX = new KeyValue(vertex.centerXProperty(), new Double(
+                vertex.getCoords()[0]));
+            KeyValue kvY = new KeyValue(vertex.centerYProperty(), new Double(
+                vertex.getCoords()[1]));
+            values.add(kvX);
+            values.add(kvY);
+        }
+        int keyFrameTime = num * super.cyclePeriodValue.intValue();
+        log.trace("New keyFrame: " + keyFrameTime + ", values: "
+            + values.size());
+        return new KeyFrame(Duration.millis(keyFrameTime), null, null, values);
+    }
+
+    /*
+     * Start the graph layout improvement calculation.
+     */
+    protected void startImproveGraph()
+    {
+        if (optimizerControl == null || optimizerControl.isDone())
+        {
+
+            final FirstOrderOptimizationProcedure optimizer = super.optim;
+            Callable<Double> optimizerTask = new Callable<Double>() {
+                @Override
+                public Double call() throws Exception
+                {
+                    try
+                    {
+                        FirstOrderOptimizationProcedure myOptim = optimizer;
+                        Double result = Double.MAX_VALUE;
+                        while (!(optimizerStatus.get() == STATUS_STOPPED)
+                            && (result > OPTIMIZER_THRESHOLD))
+                        {
+                            Timeline tl = new Timeline();
+                            tl.setCycleCount(1);
+                            tl.setAutoReverse(false);
+                            int kfCount = 0;
+                            while (kfCount++ < KEY_FRAME_NUM
+                                && result > OPTIMIZER_THRESHOLD
+                                && optimizerStatus.get() == STATUS_RUNNING)
+                            {
+                                final double myResult = myOptim.improveGraph();
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run()
+                                    {
+                                        updateOptimizerResult(myResult);
+                                    }
+                                });
+                                result = myResult;
+                                tl.getKeyFrames().add(createKeyFrame(kfCount));
+                            }
+                            if (optimizerStatus.compareAndSet(
+                                STATUS_PAUSE_REQUESTED, STATUS_PAUSED))
+                            {
+                                log.debug("Requesting pause");
+                                try
+                                {
+                                    log.debug("First wait");
+                                    // First wait to notify requester
+                                    pauseBarrier.await();
+                                    log.debug("Second wait");
+                                    // Second wait for pause
+                                    pauseBarrier.await();
+                                    optimizerStatus.set(STATUS_RUNNING);
+                                    myOptim = getOptimizer();
+                                } catch (Exception ex)
+                                {
+                                    log.error("Exception: "+ex.getMessage());
+                                    return -1.0;
+                                }
+                            } else
+                            {
+                                animationQueue.put(tl);
+                                if (animationQueue.size() > 2)
+                                {
+                                    changeCyclePeriod(0.9);
+                                }
+                            }
+                        }
+                        return result;
+                    } finally
+                    {
+                        optimizerStatus.set(STATUS_STOPPED);
+                    }
+                }
+            };
+            optimizerControl = executorPool.submit(optimizerTask);
+        }
+    }
+
+    private FirstOrderOptimizationProcedure getOptimizer()
+    {
+        return super.optim;
+    }
+
+    private void pauseOptimizer()
+    {
+        if (optimizerStatus.compareAndSet(STATUS_RUNNING,
+            STATUS_PAUSE_REQUESTED))
+        {
+            try
+            {
+                // Wait for optimizer to pause
+                pauseBarrier.await();
+            } catch (Exception e)
+            {
+                log.error("Pause Barrier Exception (pause): " + e.getMessage());
+            }
+        }
+    }
+
+    private void resumeOptimizer()
+    {
+        if (optimizerStatus.get() == STATUS_PAUSED)
+        {
+            try
+            {
+                pauseBarrier.await(1000, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException | InterruptedException
+                | BrokenBarrierException e)
+            {
+                log.error("Pause Barrier Exception (resume): " + e.getMessage());
+            }
+        }
+    }
+
+    private void resetQueue()
+    {
+        final boolean animationRunning = an!=null && an.getStatus()==Animation.Status.RUNNING;
+        executorPool.execute(new Runnable() {
+            @Override
+            public void run()
+            {
+                log.debug("Pausing Optimizer");
+                pauseOptimizer();
+                if (animationRunning)
+                {
+                    log.debug("Stopping animation");
+                    an.stop();
+                }
+                log.debug("Clearing queue");
+                animationQueue.clear();
+                log.debug("Syncing nodes");
+                graph.syncNodesToModel();
+                log.debug("Resuming optimizer");
+                resumeOptimizer();
+                if (animationRunning)
+                {
+                    log.debug("Run next animation");
+                    runNextAnimation();
+                }
+            }
+        });
+    }
+
+    /**
+     * Executed, when the animation is finished.
+     * 
+     * @see javafx.event.EventHandler#handle(javafx.event.Event)
+     */
+    @Override
+    public void handle(ActionEvent event)
+    {
+        
+        log.debug("Source: " + event.getSource()+"  "+event.getEventType());
+        log.debug("Source: " + (event.getSource() == an));
+        if (event.getSource() == an)
+        {
+            if (!(optimizerStatus.get() == STATUS_RUNNING))
+            {
+                log.debug("Aborting handle()");
+                return;
+            }
+            executorPool.execute(new Runnable() {
+                @Override
+                public void run()
+                {
+                    runNextAnimation();
+                }
+            });
+        } else if (event.getEventType() == GraphEvent.GRAPH_NODE_FIXED
+            || event.getEventType() == GraphEvent.GRAPH_NODE_RELEASED)
+        {
+            resetQueue();
+        }
+    }
+
+    /*
+     * Continues the animation.
+     */
+    private void runNextAnimation()
+    {
+        long timeDiff = System.currentTimeMillis() - lastTime;
+        log.debug("continueAnimation: " + System.currentTimeMillis() + " "
+            + timeDiff);
+        lastTime = System.currentTimeMillis();
+        if (an.getStatus() == Animation.Status.RUNNING)
+        {
+            log.error("Animation is running already!");
+            return;
+        }
+        an.getChildren().clear();
+        log.debug("AN: Animation Queue: " + animationQueue.size());
+        int moved = animationQueue.drainTo(an.getChildren());
+        if (moved <= 0)
+        {
+            if (optimizerControl.isDone()
+                || optimizerStatus.get() == STATUS_STOPPED)
+            {
+                return;
+            } else
+            {
+                try
+                {
+                    log.warn("Waiting for animation sequences in queue");
+                    changeCyclePeriod(CYCLE_PERIOD_INCREASE);
+                    Timeline tl = animationQueue.poll(MAX_WAIT_MILLIS,
+                        TimeUnit.MILLISECONDS);
+                    if (tl == null)
+                    {
+                        log.error("No elements in animation queue");
+                        return;
+                    } else
+                    {
+                        an.getChildren().add(tl);
+                    }
+                } catch (InterruptedException e)
+                {
+                    log.error("Thread interrupted while waiting for animation sequences.");
+                    return;
+                }
+            }
+        }
+        log.debug("New animations: " + moved);
+        if (!(optimizerStatus.get() == STATUS_STOPPED))
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run()
+                {
+                    log.debug("Starting Animation");
+                    an.playFromStart();
+                }
+            });
+        timeDiff = System.currentTimeMillis() - lastTime;
+        lastTime = System.currentTimeMillis();
+        log.debug("Finished: " + lastTime + " " + timeDiff);
+    }
+
+    @Override
+    public void updateModel()
+    {
+        super.updateModel();
+    }
+
+    /*
+     * Modifies the cycle period by the given factor.
+     */
+    private void changeCyclePeriod(final double factor)
+    {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run()
+            {
+                setCyclePeriod(Math.max(getMinCyclePeriod(), getCyclePeriod()
+                    * factor));
+            }
+        });
+    }
+
+    public DoubleProperty minCyclePeriodProperty()
+    {
+        return minCyclePeriod;
+    }
+
+    public double getMinCyclePeriod()
+    {
+        return minCyclePeriod.get();
+    }
+
+    public void setMinCyclePeriod(double period)
+    {
+        minCyclePeriod.set(period);
+    }
+
+    @Override
+    public void changed(
+        ObservableValue<? extends Number> value, Number oldVal, Number newVal)
+    {
+        super.changed(value, oldVal, newVal);
+        if (value == edgeLength) {
+            resetQueue();
+        }
+        if (value == minCyclePeriod)
+        {
+            setCyclePeriod(Math.max(newVal.doubleValue(), getCyclePeriod()));
+            resetQueue();
+        }
+    }
+
+}

@@ -1,0 +1,10 @@
+Graph Layout with JavaFX
+========================
+
+Sample application for graph layout with JavaFX. 
+Uses griffon 2.0 and JDK 8.
+
+With permission from Daniel Tunkelang the jiiggle java library is
+used.
+
+

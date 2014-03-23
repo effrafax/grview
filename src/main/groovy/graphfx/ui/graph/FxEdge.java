@@ -1,0 +1,192 @@
+/*
+ * Copyright 2008-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package graphfx.ui.graph;
+
+import graphfx.model.Edge;
+import graphfx.model.Graph;
+import graphfx.model.GraphElement;
+import graphfx.model.Vertex;
+import graphfx.model.impl.BaseEdge;
+import graphfx.ui.shapes.EdgeShape;
+import graphfx.ui.shapes.LineEdge;
+import javafx.scene.Group;
+import javafx.scene.Node;
+import jiggle.graph.EdgeLabel;
+
+public class FxEdge extends Group implements Edge<FxVertex>
+{
+
+    Edge<FxVertex> delegate;
+
+    public static final String DEFAULT_EDGE_STYLE = "graphEdge";
+
+    private EdgeShape<? extends Node> edge;
+
+    public FxEdge(Graph<FxVertex, FxEdge> graph, Vertex<FxVertex> from,
+        Vertex<FxVertex> to)
+    {
+        delegate = new BaseEdge<FxVertex>(graph, from, to);
+        createLine(from, to);
+        bindLine(from, to);
+    }
+
+    public FxEdge(Graph<FxVertex,FxEdge> g, Vertex<FxVertex> f, Vertex<FxVertex> t, boolean dir)
+    {
+        delegate = new BaseEdge<FxVertex>(g, f, t, dir);
+        createLine(f, t);
+        bindLine(f, t);
+    }
+
+    
+    
+    public Edge<FxVertex> getDelegate() {
+        return delegate;
+    }
+
+    private void bindLine(Vertex<FxVertex> from, Vertex<FxVertex> to)
+    {
+        FxVertex f = from.getExtension();
+        FxVertex t = to.getExtension();
+        edge.startXProperty().bind(f.centerXProperty());
+        edge.startYProperty().bind(f.centerYProperty());
+        edge.endXProperty().bind(t.centerXProperty());
+        edge.endYProperty().bind(t.centerYProperty());
+    }
+
+    
+    private void createLine(Vertex<FxVertex> from, Vertex<FxVertex> to)
+    {
+        LineEdge newEdgeLine = new LineEdge(from.getCoords()[0],
+            from.getCoords()[1], to.getCoords()[0], to.getCoords()[1]);
+        this.edge = newEdgeLine;
+        getChildren().add(newEdgeLine);
+    }
+
+    @Override
+    public Vertex<FxVertex> getFrom()
+    {
+        return delegate.getFrom();
+    }
+
+    @Override
+    public Vertex<FxVertex> getTo()
+    {
+        return delegate.getTo();
+    }
+
+    public EdgeLabel getLabel()
+    {
+        return delegate.getLabel();
+    }
+
+    public void setLabel(EdgeLabel lbl)
+    {
+        delegate.setLabel(lbl);
+    }
+
+    public boolean getDirected()
+    {
+        return delegate.getDirected();
+    }
+
+    public void setDirected(boolean d)
+    {
+        delegate.setDirected(d);
+    }
+
+    public double getPreferredLength()
+    {
+        return delegate.getPreferredLength();
+    }
+
+    public void setPreferredLength(double len)
+    {
+        delegate.setPreferredLength(len);
+    }
+
+    public double getLengthSquared()
+    {
+        return delegate.getLengthSquared();
+    }
+
+    public double getLength()
+    {
+        return delegate.getLength();
+    }
+
+    @Override
+    public boolean isBooleanField()
+    {
+        return delegate.isBooleanField();
+    }
+
+    @Override
+    public void setBooleanField(boolean b)
+    {
+        delegate.setBooleanField(b);
+
+    }
+
+    @Override
+    public int getIntField()
+    {
+        return delegate.getIntField();
+    }
+
+    @Override
+    public void setIntField(int intField)
+    {
+        delegate.setIntField(intField);
+    }
+
+    @Override
+    public Object getObjectField()
+    {
+        return delegate.getObjectField();
+    }
+
+    @Override
+    public void setObjectField(Object objectField)
+    {
+        delegate.setObjectField(objectField);
+
+    }
+
+    @Override
+    public GraphElement getContext()
+    {
+        return delegate.getContext();
+    }
+
+    @Override
+    public void setContext(GraphElement context)
+    {
+        delegate.setContext(context);
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj instanceof FxEdge) {
+            return delegate.equals(((FxEdge)obj).getDelegate());
+        } else {
+            return false;
+        }
+    }
+
+   
+}

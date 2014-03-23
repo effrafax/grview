@@ -1,0 +1,52 @@
+package graphfx.ui.shapes;
+
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Circle;
+
+public class CircleVertex extends Circle implements VertexShape<Circle>
+{
+
+    public static String DEFAULT_STYLE_CLASS="graphVertexCircle";
+    
+    public CircleVertex()
+    {
+       super();
+       init();
+    }
+
+    public CircleVertex(
+        double centerX, double centerY, double radius, Paint fill)
+    {
+        super(centerX, centerY, radius, fill);
+        init();
+    }
+
+    public CircleVertex(double centerX, double centerY, double radius)
+    {
+        super(centerX, centerY, radius);
+        init();
+    }
+
+    public CircleVertex(double radius, Paint fill)
+    {
+        super(radius, fill);
+        init();
+    }
+
+    public CircleVertex(double radius)
+    {
+        super(radius);
+        init();
+    }
+    
+    private void init() {
+        getStyleClass().add(DEFAULT_STYLE_CLASS);
+    }
+
+    @Override
+    public Circle getNode()
+    {
+        return this;
+    }
+
+}

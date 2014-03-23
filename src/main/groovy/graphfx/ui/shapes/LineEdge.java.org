@@ -1,0 +1,31 @@
+package graphfx.ui.shapes;
+
+import javafx.scene.shape.Line;
+
+public class LineEdge extends Line implements EdgeShape<Line>
+{
+
+    public LineEdge()
+    {
+        super();
+        init();
+    }
+
+    public LineEdge(double startX, double startY, double endX, double endY)
+    {
+        super(startX, startY, endX, endY);
+        init();
+    }
+    
+    private void init() {
+        getStyleClass().add(DEFAULT_STYLE_CLASS);
+    }
+
+    @Override
+    public Line getNode()
+    {
+       return this;
+    }
+
+
+}

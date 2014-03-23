@@ -1,0 +1,32 @@
+package graphfx.model;
+
+public interface Cell extends GraphElement
+{
+
+    public int getDimensions();
+
+    public void setDimensions(int d);
+
+    public double[] getCoords();
+
+    public void setCoords(double[] c);
+    
+    public boolean isFixed();
+    
+    public void setFixed(boolean fixed);
+
+    public double[] getSize();
+
+    public double[] getMin();
+
+    public double[] getMax();
+
+    public abstract void translate(double scalar, double[] vector);
+
+    public abstract void translate(double[] vector);
+
+    public abstract void setWeight(double w);
+
+    public abstract double getWeight();
+
+}

@@ -1,0 +1,25 @@
+.graphVertex {
+    -fx-border-width: 3px;
+    -fx-fill: radial-gradient(center 50% 50%, radius 50%, rgba(25,25,112,1), rgba(25,25,112,0.5) 50%, transparent);
+}
+
+.graphVertexFixed {
+    -fx-border-width: 3px;
+    -fx-fill: radial-gradient(center 50% 50%, radius 50%, rgba(255,25,112,1), rgba(255,25,112,0.5) 50%, transparent);
+}
+
+.graphVertexCircle {
+    -fx-border-width: inherit;
+    -fx-fill: inherit;
+}
+
+.graphCanvas {
+    -fx-border-width: 3px;
+    -fx-border-style: solid;
+}
+
+.graphCanvasBg {
+    -fx-fill: radial-gradient(focus-angle 45deg, focus-distance 20%, center 25% 25%, radius 50%, reflect, lightskyblue, lightblue 75%, skyblue);
+    -fx-arc-height: 20;
+    -fx-arc-width: 20;
+}

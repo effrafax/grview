@@ -1,0 +1,12 @@
+package graphfx.ui.shapes;
+
+import javafx.collections.ObservableList;
+import javafx.scene.Node;
+
+public interface GraphShape<N extends Node>
+{
+
+    public ObservableList<String> getStyleClass();
+    
+    public N getNode();
+}
